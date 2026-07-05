@@ -34,13 +34,14 @@ function getProxy(sandboxId) {
 
 app.use((req, res, next) => {
   const host = req.headers.host || "";
-  const previewMatch = host.match(/^([^.]+)\.preview\.localhost$/i);
+  // const previewMatch = host.match(/^([^.]+)\.preview\.localhost$/i);
 
-  if (!previewMatch) {
-    return next();
-  }
+  // if (!previewMatch) {
+  //   return next();
+  // }
+  const sandboxId = host.split(".")[0];
 
-  const sandboxId = previewMatch[1];
+  // const sandboxId = previewMatch[1];
   return getProxy(sandboxId)(req, res, next);
 });
 
