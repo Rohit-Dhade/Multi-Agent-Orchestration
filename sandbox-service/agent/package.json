@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start" : "node server.js",
+    "start": "node server.js",
     "dev": "nodemon -L server.js"
   },
   "keywords": [],
@@ -13,7 +13,8 @@
   "type": "module",
   "dependencies": {
     "express": "^5.2.1",
-    "morgan": "^1.11.0"
+    "morgan": "^1.11.0",
+    "path": "^0.12.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

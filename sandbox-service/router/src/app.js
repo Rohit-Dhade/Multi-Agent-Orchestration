@@ -5,8 +5,6 @@ import morgan from "morgan";
 const app = express();
 app.use(morgan("combined"));
 
-app.use(express.json());
-
 app.get("/api/status/healthz", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
@@ -27,6 +25,10 @@ function getProxy(sandboxId) {
       changeOrigin: true,
       ws: true,
       logLevel: "silent",
+      preserveHeaderKeyCase: true,
+      xfwd: true,
+      timeout: 30000,
+      proxyTimeout: 30000,
     });
   }
 
@@ -42,6 +44,10 @@ function getAgentProxy(sandboxId) {
       changeOrigin: true,
       ws: true,
       logLevel: "silent",
+      preserveHeaderKeyCase: true,
+      xfwd: true,
+      timeout: 30000,
+      proxyTimeout: 30000,
     });
   }
 
