@@ -63,6 +63,7 @@ app.get("/list-files", async (req, res) => {
       files: files,
     });
   } catch (err) {
+    console.error("list-files error:", err);
     res.status(500).json({
       message: "Error occurred while listing files",
       status: "error",
@@ -123,7 +124,7 @@ app.get("/read-files", async (req, res) => {
 app.patch("/update-files", async (req, res) => {
   const updates = req.body.updates;
 
-  if (!Array.isArray(updates) || !updates) {
+  if (!Array.isArray(updates) || updates.length === 0) {
     return res.status(400).json({
       message:
         "Invalid request body. Expected an JSON object with an 'updates' property containing an array of file updates.",
@@ -131,9 +132,24 @@ app.patch("/update-files", async (req, res) => {
     });
   }
 
+  const normalizedUpdates = updates.map((update) => {
+    if (typeof update === "string") {
+      return { file: update, content: "" };
+    }
+
+    return update;
+  });
+
   const results = await Promise.all(
-    updates.map(async (update) => {
+    normalizedUpdates.map(async (update) => {
       const { file, content } = update;
+
+      if (typeof file !== "string" || typeof content !== "string") {
+        return {
+          ["invalid-update"]: "Each update entry must contain string 'file' and 'content' fields.",
+        };
+      }
+
       const filePath = path.join(WORKING_DIR, file);
 
       try {
