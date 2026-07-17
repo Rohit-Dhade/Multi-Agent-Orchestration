@@ -1,0 +1,9 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+
+build: 
+  artifacts:
+    - image: ai-orchestration
+      context: ai-orchestration
+      docker:
+        dockerfile: Dockerfile
