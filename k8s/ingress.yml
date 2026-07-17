@@ -17,6 +17,16 @@ spec:
                 port:
                   number: 80
 
+    - http:
+        paths:
+          - pathType: Prefix
+            path: "/api/ai"
+            backend:
+              service:
+                name: ai-orchestration-service
+                port:
+                  number: 80
+
     
     - host: "*.preview.localhost"
       http:
@@ -39,3 +49,4 @@ spec:
                 name: router-service
                 port:
                   number: 80
+
