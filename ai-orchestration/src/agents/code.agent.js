@@ -1,13 +1,13 @@
 import { ChatMistralAI } from "@langchain/mistralai";
 import { listfiles, readfiles, updateFiles } from "./tools.js";
 import { createAgent } from "langchain";
-import dotenv from "dotenv";
+import "dotenv/config"
 
-dotenv.config();
 
 const model = new ChatMistralAI({
   model: "mistral-medium-latest",
   apiKey: process.env.MISTRALAI_API_KEY,
+  "temperature": 0.7
 });
 
 const agent = createAgent({
@@ -27,4 +27,4 @@ await agent.invoke({
     ],
 });
 
-export default model;
+export default agent;
