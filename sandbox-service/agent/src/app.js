@@ -3,7 +3,36 @@ import morgan from "morgan";
 import fs from "fs";
 import path from "path";
 
-const WORKING_DIR = "/workspace";
+const DEFAULT_WORKSPACE_ROOT = process.env.SANDBOX_WORKSPACE_ROOT || "/workspace";
+const FALLBACK_WORKSPACE_ROOT = path.resolve(process.cwd(), ".sandbox-workspace");
+
+const getWorkspaceRoot = async () => {
+  const preferredRoot = process.env.SANDBOX_WORKSPACE_ROOT || DEFAULT_WORKSPACE_ROOT;
+  try {
+    await fs.promises.access(preferredRoot, fs.constants.W_OK);
+    return preferredRoot;
+  } catch {
+    await fs.promises.mkdir(FALLBACK_WORKSPACE_ROOT, { recursive: true });
+    return FALLBACK_WORKSPACE_ROOT;
+  }
+};
+
+const WORKING_DIR = await getWorkspaceRoot();
+
+const resolveWorkspacePath = (file) => {
+  const normalizedFile = file.trim();
+  const withoutWorkspacePrefix = normalizedFile.replace(/^\/workspace\/?/, "");
+  const candidatePath = withoutWorkspacePrefix.startsWith("/")
+    ? withoutWorkspacePrefix.slice(1)
+    : withoutWorkspacePrefix;
+
+  return path.resolve(WORKING_DIR, candidatePath);
+};
+
+const toWorkspaceRelativePath = (resolvedPath) => {
+  const relativePath = path.relative(WORKING_DIR, resolvedPath);
+  return `/${relativePath.replace(/\\/g, "/")}`;
+};
 
 const app = express();
 app.use(express.json());
@@ -56,7 +85,7 @@ app.get("/list-files", async (req, res) => {
   };
 
   try {
-    const files = await listFiles(WORKING_DIR, WORKING_DIR);
+    const files = await listFiles(WORKING_DIR, "");
     res.status(200).json({
       message: "Files listed successfully",
       status: "success",
@@ -94,15 +123,24 @@ app.get("/read-files", async (req, res) => {
 
   const result = await Promise.all(
     fileList.map(async (file) => {
-      const filePath = `${WORKING_DIR}/${file}`;
-      try {
-        const content = await fs.promises.readFile(filePath, "utf-8");
+      const normalizedFile = file.trim();
+      const resolvedPath = resolveWorkspacePath(normalizedFile);
+      const relativePath = path.relative(WORKING_DIR, resolvedPath);
+
+      if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
         return {
-          [filePath.replace(WORKING_DIR, "")]: content,
+          [normalizedFile]: `Error reading file: path escapes workspace`,
+        };
+      }
+
+      try {
+        const content = await fs.promises.readFile(resolvedPath, "utf-8");
+        return {
+          [toWorkspaceRelativePath(resolvedPath)]: content,
         };
       } catch (err) {
         return {
-          [filePath.replace(WORKING_DIR, "")]: `Error reading file: ${err.message}`,
+          [toWorkspaceRelativePath(resolvedPath)]: `Error reading file: ${err.message}`,
         };
       }
     }),
@@ -150,16 +188,25 @@ app.patch("/update-files", async (req, res) => {
         };
       }
 
-      const filePath = path.join(WORKING_DIR, file);
+      const normalizedFile = file.trim();
+      const resolvedPath = resolveWorkspacePath(normalizedFile);
+      const relativePath = path.relative(WORKING_DIR, resolvedPath);
+
+      if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+        return {
+          [normalizedFile]: `Error updating file: path escapes workspace`,
+        };
+      }
 
       try {
-        await fs.promises.writeFile(file, content, "utf-8");
+        await fs.promises.mkdir(path.dirname(resolvedPath), { recursive: true });
+        await fs.promises.writeFile(resolvedPath, content, "utf-8");
         return {
-          [filePath.replace(WORKING_DIR, "")]: "File updated successfully",
+          [toWorkspaceRelativePath(resolvedPath)]: "File updated successfully",
         };
       } catch (err) {
         return {
-          [filePath.replace(WORKING_DIR, "")]: `Error updating file: ${err.message}`,
+          [toWorkspaceRelativePath(resolvedPath)]: `Error updating file: ${err.message}`,
         };
       }
     }),
@@ -190,17 +237,25 @@ app.post("/create-files", async (req, res) => {
   const results = await Promise.all(
     files.map(async (fileObj) => {
       const { file, content } = fileObj;
-      const filePath = path.join(WORKING_DIR, file);
+      const normalizedFile = file.trim();
+      const resolvedPath = resolveWorkspacePath(normalizedFile);
+      const relativePath = path.relative(WORKING_DIR, resolvedPath);
+
+      if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+        return {
+          [normalizedFile]: `Error creating file: path escapes workspace`,
+        };
+      }
 
       try {
-        await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-        await fs.promises.writeFile(filePath, content, "utf-8");
+        await fs.promises.mkdir(path.dirname(resolvedPath), { recursive: true });
+        await fs.promises.writeFile(resolvedPath, content, "utf-8");
         return {
-          [filePath.replace(WORKING_DIR, "")]: "File created successfully",
+          [toWorkspaceRelativePath(resolvedPath)]: "File created successfully",
         };
       } catch (err) {
         return {
-          [filePath.replace(WORKING_DIR, "")]: `Error creating file: ${err.message}`,
+          [toWorkspaceRelativePath(resolvedPath)]: `Error creating file: ${err.message}`,
         };
       }
     }),

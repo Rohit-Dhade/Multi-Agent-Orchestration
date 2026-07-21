@@ -11,8 +11,9 @@ build:
       docker:
         dockerfile: dockerfile
       sync:
-        infer:
-          - "src/**"
+        manual:
+          - src: "src/**"
+            dest: /app
 
     - image: agent
       context: sandbox-service/agent

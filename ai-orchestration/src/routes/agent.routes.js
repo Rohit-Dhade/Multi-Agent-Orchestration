@@ -1,15 +1,24 @@
 import { Router } from "express";
-import agent from "../agents/code.agent.js";
+import { createCodeAgent } from "../agents/code.agent.js";
 
 const agentRouter = Router();
 
 agentRouter.post("/invoke", async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, sandboxId } = req.body;
 
     if (typeof message !== "string" || message.trim() === "") {
       return res.status(400).json({ error: "A non-empty 'message' string is required." });
     }
+
+    if (typeof sandboxId !== "string" || sandboxId.trim() === "") {
+      return res.status(400).json({ error: "A non-empty 'sandboxId' string is required." });
+    }
+
+    // Build the sandbox agent service URL from the sandboxId
+    const sandboxServiceUrl = `http://sandbox-service-${sandboxId.trim()}:3000`;
+
+    const agent = createCodeAgent(sandboxServiceUrl);
 
     const response = await agent.invoke({
       messages: [
