@@ -153,7 +153,7 @@ app.patch("/update-files", async (req, res) => {
       const filePath = path.join(WORKING_DIR, file);
 
       try {
-        await fs.promises.writeFile(filePath, content, "utf-8");
+        await fs.promises.writeFile(file, content, "utf-8");
         return {
           [filePath.replace(WORKING_DIR, "")]: "File updated successfully",
         };

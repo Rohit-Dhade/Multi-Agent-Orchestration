@@ -5,7 +5,7 @@ metadata:
   labels:
     name:  ai-deployment
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app:  ai-server
@@ -17,6 +17,12 @@ spec:
       containers:
       - image:  ai-orchestration
         name:  ai-server
+        env:
+        - name: MISTRALAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ai-secrets
+              key: MISTRALAI_API_KEY
         resources:
           requests:
             cpu: "250m"
