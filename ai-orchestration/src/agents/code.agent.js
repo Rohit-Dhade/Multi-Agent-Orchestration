@@ -1,9 +1,10 @@
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { ChatMistralAI } from "@langchain/mistralai";
-import { createTools } from "./tools.js";
+// import { createTools } from "./tools.js";
 import { createAgent } from "langchain";
 import dotenv from "dotenv";
+import { listfiles , readfiles , updateFiles } from "./tools.js";
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.resolve(currentDir, "../../.env");
@@ -14,7 +15,7 @@ const apiKey = process.env.MISTRALAI_API_KEY;
 
 if (!apiKey) {
   throw new Error(
-    "Mistral API key is missing. Set MISTRAL_API_KEY or MISTRALAI_API_KEY."
+    "Mistral API key is missing. Set MISTRAL_API_KEY or MISTRALAI_API_KEY.",
   );
 }
 
@@ -178,18 +179,12 @@ FINAL PRINCIPLE
 ═══════════════════════════════════════════════
 Build the thing the user would build if they were a senior frontend engineer with taste and one afternoon to spare. Default to doing more, not less. When in doubt, ship something polished and offer to refine.`;
 
-/**
- * Creates an agent bound to a specific sandbox service.
- * @param {string} sandboxServiceUrl - e.g. "http://sandbox-service-<uuid>:3000"
- */
-export function createCodeAgent(sandboxServiceUrl) {
-  const { listfiles, readfiles, updateFiles } = createTools(sandboxServiceUrl);
+const agent = createAgent({
+  model,
+  tools: [listfiles, readfiles, updateFiles],
+  prompt: AGENT_PROMPT,
+}).withConfig({
+  recursionLimit: 50,
+});
 
-  return createAgent({
-    model,
-    tools: [listfiles, readfiles, updateFiles],
-    prompt: AGENT_PROMPT,
-  }).withConfig({
-    recursionLimit: 50,
-  });
-}
+export default agent;
